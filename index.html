@@ -1441,6 +1441,61 @@
     min-height: 18px;
   }
 
+
+  /* ===== WHATSAPP TEST BUTTON ===== */
+  .wa-test-box {
+    margin-top: 16px;
+    background: rgba(37,211,102,0.06);
+    border: 1px solid rgba(37,211,102,0.25);
+    border-radius: 14px;
+    padding: 18px;
+  }
+  .wa-test-title {
+    font-size: 0.78rem;
+    font-family: 'Lato', sans-serif;
+    font-weight: 700;
+    color: #25D366;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .wa-test-desc {
+    font-size: 0.74rem;
+    color: #7aa8d4;
+    line-height: 1.6;
+    margin-bottom: 14px;
+  }
+  .btn-wa-test {
+    width: 100%;
+    padding: 13px;
+    background: linear-gradient(135deg, #128C7E, #25D366);
+    border: none;
+    border-radius: 12px;
+    color: #fff;
+    font-family: 'Lato', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.25s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 0 4px 14px rgba(37,211,102,0.25);
+  }
+  .btn-wa-test:hover { opacity: 0.88; transform: translateY(-1px); }
+  .btn-wa-test:disabled { opacity: 0.5; cursor: default; transform: none; }
+  .wa-test-status {
+    font-size: 0.74rem;
+    margin-top: 10px;
+    text-align: center;
+    min-height: 18px;
+    color: #7aa8d4;
+    line-height: 1.5;
+  }
+  .wa-test-status.ok  { color: #25D366; }
+  .wa-test-status.err { color: #e74c3c; }
+
 </style>
 </head>
 <body>
@@ -1610,6 +1665,18 @@
     </div>
 
     <button class="btn-submit" onclick="salvarConfig()" style="margin-top:16px;">💾 Salvar Configurações</button>
+
+    <div class="wa-test-box">
+      <div class="wa-test-title">📲 Testar WhatsApp</div>
+      <p class="wa-test-desc">
+        Envia uma mensagem de teste para os dois números cadastrados sem precisar cadastrar visitante.
+      </p>
+      <button class="btn-wa-test" id="btn-wa-test" onclick="testarCallMeBot()">
+        <span>📤</span> Enviar Mensagem de Teste
+      </button>
+      <div class="wa-test-status" id="wa-test-status"></div>
+    </div>
+
 
     <div style="margin-top:20px;padding:16px;background:rgba(74,144,217,0.08);border:1px solid rgba(74,144,217,0.2);border-radius:12px;">
       <p style="font-size:0.75rem;color:#7aa8d4;line-height:1.7;">
@@ -1880,6 +1947,18 @@
       hora: new Date().toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'}),
       operador: localStorage.getItem('operador_nome') || 'Desconhecido'
     };
+
+
+    // ── Proteção anti-duplicata ────────────────────────────
+    var hoje = new Date().toLocaleDateString('pt-BR');
+    var jaExiste = visitors.some(v =>
+      v.whatsapp.replace(/\D/g,'') === whatsapp.replace(/\D/g,'') &&
+      v.data === hoje
+    );
+    if (jaExiste) {
+      showToast('⚠️ Este número já foi cadastrado hoje!', '#1a2a4a', '#e74c3c');
+      return;
+    }
 
     visitors.unshift(visitor);
     localStorage.setItem('acolhimento_visitors', JSON.stringify(visitors));
@@ -2317,6 +2396,53 @@
 
 
 
+
+
+  // ===== WHATSAPP TEST =====
+  async function testarCallMeBot() {
+    var btn = document.getElementById('btn-wa-test');
+    var status = document.getElementById('wa-test-status');
+    btn.disabled = true;
+    btn.innerHTML = '<span>⏳</span> Enviando...';
+    status.className = 'wa-test-status';
+    status.textContent = 'Aguarde, enviando para os dois números...';
+
+    var agora = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+    var msg = '✅ *Teste CallMeBot — Ministério Acolhimento*\n\n' +
+              'Mensagem de teste enviada às ' + agora + '.\n' +
+              'Se você recebeu isso, o WhatsApp está funcionando corretamente! 🙏';
+
+    var PHONE1 = '55987958154', APIKEY1 = '9607737';
+    var PHONE2 = '553193800471', APIKEY2 = '1258409';
+
+    function enviarTeste(phone, apikey) {
+      return new Promise((resolve) => {
+        var url = 'https://api.callmebot.com/whatsapp.php?phone=' + phone +
+                  '&text=' + encodeURIComponent(msg) + '&apikey=' + apikey;
+        var img = new Image();
+        var done = false;
+        img.onload = () => { if (!done) { done = true; resolve(true); } };
+        img.onerror = () => { if (!done) { done = true; resolve(false); } };
+        img.src = url;
+        setTimeout(() => { if (!done) { done = true; resolve(false); } }, 5000);
+      });
+    }
+
+    try {
+      var [r1, r2] = await Promise.all([
+        enviarTeste(PHONE1, APIKEY1),
+        enviarTeste(PHONE2, APIKEY2)
+      ]);
+      status.className = 'wa-test-status ok';
+      status.textContent = '✅ Enviado! Verifique o WhatsApp dos dois números.';
+    } catch(e) {
+      status.className = 'wa-test-status err';
+      status.textContent = '⚠️ Erro ao enviar. Verifique sua conexão.';
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = '<span>📤</span> Enviar Mensagem de Teste';
+  }
 
   // ===== CONFIG AUTH =====
   var AUTH_NOME  = 'Elder';
