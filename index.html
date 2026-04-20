@@ -542,6 +542,7 @@
 <div class="nav-tabs">
   <button class="nav-tab active" onclick="switchTab('form')">✏️ Cadastrar</button>
   <button class="nav-tab" onclick="switchTab('list')">📋 Visitantes</button>
+  <button class="nav-tab" onclick="switchTab('config')">⚙️ Config</button>
 </div>
 
 <!-- FORM VIEW -->
@@ -621,6 +622,41 @@
   <div class="visitor-list" id="visitor-list"></div>
 </div>
 
+<!-- CONFIG VIEW -->
+<div class="view" id="view-config">
+  <div class="form-card">
+    <div class="section-label">📱 Notificação WhatsApp</div>
+
+    <div class="field-group">
+      <label>Número do WhatsApp</label>
+      <input type="tel" id="cfg-phone" placeholder="Ex: 553199999999" maxlength="20">
+      <p style="font-size:0.72rem;color:#7aa8d4;margin-top:6px;">Digite com código do país (55) + DDD + número, sem espaços ou traços.</p>
+    </div>
+
+    <div class="field-group">
+      <label>API Key (CallMeBot)</label>
+      <input type="text" id="cfg-apikey" placeholder="Ex: 1258409" maxlength="20">
+      <p style="font-size:0.72rem;color:#7aa8d4;margin-top:6px;">Recebida ao ativar o CallMeBot no WhatsApp.</p>
+    </div>
+
+    <button class="btn-submit" onclick="salvarConfig()" style="margin-top:16px;">💾 Salvar Configurações</button>
+
+    <div style="margin-top:20px;padding:16px;background:rgba(74,144,217,0.08);border:1px solid rgba(74,144,217,0.2);border-radius:12px;">
+      <p style="font-size:0.75rem;color:#7aa8d4;line-height:1.7;">
+        <strong style="color:#fff;">Como ativar um novo número:</strong><br>
+        1. Salve o contato <strong style="color:#fff;">+34 644 61 71 83</strong><br>
+        2. Mande: <strong style="color:#fff;">I allow callmebot to send me messages</strong><br>
+        3. Você receberá sua API Key<br>
+        4. Preencha os campos acima e salve
+      </p>
+    </div>
+
+    <div style="margin-top:16px;">
+      <button class="btn-export" style="width:100%;padding:12px;text-align:center;" onclick="testarWhatsApp()">📤 Enviar Mensagem de Teste</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL -->
 <div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
   <div class="modal" id="modal-content">
@@ -643,6 +679,7 @@
     document.getElementById('view-' + tab).classList.add('active');
     event.target.classList.add('active');
     if (tab === 'list') renderList();
+    if (tab === 'config') carregarConfig();
   }
 
   function toggleFilhos(val) {
@@ -653,8 +690,46 @@
   }
 
   // ===== CONFIGURAÇÃO WHATSAPP =====
-  const WA_PHONE = '553193800471';
-  const WA_APIKEY = '1258409';
+  const WA_DEFAULT_PHONE = '553193800471';
+  const WA_DEFAULT_APIKEY = '1258409';
+
+  function getConfig() {
+    return {
+      phone: localStorage.getItem('wa_phone') || WA_DEFAULT_PHONE,
+      apikey: localStorage.getItem('wa_apikey') || WA_DEFAULT_APIKEY
+    };
+  }
+
+  function carregarConfig() {
+    const cfg = getConfig();
+    document.getElementById('cfg-phone').value = cfg.phone;
+    document.getElementById('cfg-apikey').value = cfg.apikey;
+  }
+
+  function salvarConfig() {
+    const phone = document.getElementById('cfg-phone').value.trim();
+    const apikey = document.getElementById('cfg-apikey').value.trim();
+    if (!phone || !apikey) {
+      showToast('⚠️ Preencha número e API Key!', '#1a2a4a', '#4a90d9');
+      return;
+    }
+    localStorage.setItem('wa_phone', phone);
+    localStorage.setItem('wa_apikey', apikey);
+    showToast('✅ Configurações salvas!');
+  }
+
+  async function testarWhatsApp() {
+    const cfg = getConfig();
+    const msg = `✝ Teste do App - Ministério de Acolhimento!\n\nSe você recebeu esta mensagem, a configuração está funcionando corretamente. 🙌`;
+    const url = `https://api.callmebot.com/whatsapp.php?phone=${cfg.phone}&text=${encodeURIComponent(msg)}&apikey=${cfg.apikey}`;
+    showToast('📤 Enviando mensagem de teste...');
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = img.onerror = () => { showToast('✅ Teste enviado! Verifique o WhatsApp.'); resolve(); };
+      img.src = url;
+      setTimeout(() => { showToast('✅ Teste enviado! Verifique o WhatsApp.'); resolve(); }, 3000);
+    });
+  }
 
   async function enviarWhatsApp(visitor) {
     const filhosInfo = visitor.filhos === 'Sim' ? `Sim (${visitor.num_filhos || '?'})` : visitor.filhos;
@@ -669,13 +744,16 @@
       `📝 *Obs:* ${visitor.obs}\n` +
       `📅 *Data:* ${visitor.data}`;
 
-    const url = `https://api.callmebot.com/whatsapp.php?phone=${WA_PHONE}&text=${encodeURIComponent(msg)}&apikey=${WA_APIKEY}`;
+    const cfg = getConfig();
+    const url = `https://api.callmebot.com/whatsapp.php?phone=${cfg.phone}&text=${encodeURIComponent(msg)}&apikey=${cfg.apikey}`;
 
-    try {
-      await fetch(url, { mode: 'no-cors' });
-    } catch(e) {
-      console.log('WhatsApp notif enviada (no-cors)');
-    }
+    // Usa imagem para contornar bloqueio CORS do navegador
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = img.onerror = () => resolve();
+      img.src = url;
+      setTimeout(resolve, 3000);
+    });
   }
 
   async function salvarVisitante() {
