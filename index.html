@@ -1880,20 +1880,24 @@
     showToast('✅ Tópico Ntfy salvo!');
   }
 
-  // Envia notificação via ntfy.sh usando GET com <img> para evitar CORS
-  function ntfyEnviar(topic, titulo, mensagem) {
-    return new Promise((resolve) => {
-      var url = 'https://ntfy.sh/' + topic
-              + '?title=' + encodeURIComponent(titulo)
-              + '&message=' + encodeURIComponent(mensagem)
-              + '&priority=high';
-      var img = new Image();
-      var done = false;
-      img.onload  = () => { if (!done) { done = true; resolve(true); } };
-      img.onerror = () => { if (!done) { done = true; resolve(false); } };
-      img.src = url;
-      setTimeout(() => { if (!done) { done = true; resolve(false); } }, 6000);
-    });
+  // Envia notificação via ntfy.sh com no-cors para evitar bloqueio do browser
+  async function ntfyEnviar(topic, titulo, mensagem) {
+    try {
+      await fetch('https://ntfy.sh/' + topic, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {
+          'Content-Type': 'text/plain',
+          'Title': titulo,
+          'Priority': 'high'
+        },
+        body: mensagem
+      });
+      return true;
+    } catch(e) {
+      console.warn('Ntfy erro:', e);
+      return false;
+    }
   }
 
   async function testarNtfy() {
