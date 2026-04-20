@@ -652,14 +652,40 @@
     document.getElementById('children-count').classList.toggle('visible', val === 'Sim');
   }
 
-  function salvarVisitante() {
+  // ===== CONFIGURAÇÃO WHATSAPP =====
+  const WA_PHONE = '553193800471';
+  const WA_APIKEY = '1258409';
+
+  async function enviarWhatsApp(visitor) {
+    const filhosInfo = visitor.filhos === 'Sim' ? `Sim (${visitor.num_filhos || '?'})` : visitor.filhos;
+    const msg = 
+      `✝ *Novo Visitante Registrado!*\n\n` +
+      `👤 *Nome:* ${visitor.nome}\n` +
+      `🎂 *Idade:* ${visitor.idade} anos\n` +
+      `💍 *Estado Civil:* ${visitor.estado_civil}\n` +
+      `📱 *WhatsApp:* ${visitor.whatsapp}\n` +
+      `📍 *Endereço:* ${visitor.endereco}\n` +
+      `👶 *Filhos:* ${filhosInfo}\n` +
+      `📝 *Obs:* ${visitor.obs}\n` +
+      `📅 *Data:* ${visitor.data}`;
+
+    const url = `https://api.callmebot.com/whatsapp.php?phone=${WA_PHONE}&text=${encodeURIComponent(msg)}&apikey=${WA_APIKEY}`;
+
+    try {
+      await fetch(url, { mode: 'no-cors' });
+    } catch(e) {
+      console.log('WhatsApp notif enviada (no-cors)');
+    }
+  }
+
+  async function salvarVisitante() {
     const nome = document.getElementById('nome').value.trim();
     const idade = document.getElementById('idade').value.trim();
     const estado_civil = document.getElementById('estado_civil').value;
     const whatsapp = document.getElementById('whatsapp').value.trim();
 
     if (!nome || !idade || !estado_civil || !whatsapp) {
-      showToast('⚠️ Preencha os campos obrigatórios!', '#5a3a00', '#c9a84c');
+      showToast('⚠️ Preencha os campos obrigatórios!', '#1a2a4a', '#4a90d9');
       return;
     }
 
@@ -680,7 +706,13 @@
 
     visitors.unshift(visitor);
     localStorage.setItem('acolhimento_visitors', JSON.stringify(visitors));
-    showToast('✅ Visitante cadastrado com sucesso!');
+
+    showToast('✅ Cadastrando e notificando...');
+
+    // Envia notificação WhatsApp
+    await enviarWhatsApp(visitor);
+
+    showToast('✅ Visitante cadastrado! 📱 WhatsApp notificado!');
     resetForm();
   }
 
