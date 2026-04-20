@@ -1824,16 +1824,28 @@
       `📅 *Data:* ${visitor.data} às ${visitor.hora || ''}\n` +
       `👤 *Cadastrado por:* ${visitor.operador || '—'}`;
 
-    const cfg = getConfig();
-    const url = `https://api.callmebot.com/whatsapp.php?phone=${cfg.phone}&text=${encodeURIComponent(msg)}&apikey=${cfg.apikey}`;
+    // ── Número 1: Esposa (principal) ──────────────────
+    const PHONE1 = '55987958154';
+    const APIKEY1 = '9607737';
+    // ── Número 2: Elder (backup) ───────────────────────
+    const PHONE2 = '553193800471';
+    const APIKEY2 = '1258409';
 
-    // Usa imagem para contornar bloqueio CORS do navegador
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.onload = img.onerror = () => resolve();
-      img.src = url;
-      setTimeout(resolve, 3000);
-    });
+    function enviar(phone, apikey) {
+      return new Promise((resolve) => {
+        const url = `https://api.callmebot.com/whatsapp.php?phone=${phone}&text=${encodeURIComponent(msg)}&apikey=${apikey}`;
+        const img = new Image();
+        img.onload = img.onerror = () => resolve();
+        img.src = url;
+        setTimeout(resolve, 3000);
+      });
+    }
+
+    // Envia para os dois números em paralelo
+    return Promise.all([
+      enviar(PHONE1, APIKEY1),
+      enviar(PHONE2, APIKEY2)
+    ]);
   }
 
   async function salvarVisitante() {
