@@ -1880,6 +1880,22 @@
     showToast('✅ Tópico Ntfy salvo!');
   }
 
+  // Envia notificação via ntfy.sh usando GET com <img> para evitar CORS
+  function ntfyEnviar(topic, titulo, mensagem) {
+    return new Promise((resolve) => {
+      var url = 'https://ntfy.sh/' + topic
+              + '?title=' + encodeURIComponent(titulo)
+              + '&message=' + encodeURIComponent(mensagem)
+              + '&priority=high';
+      var img = new Image();
+      var done = false;
+      img.onload  = () => { if (!done) { done = true; resolve(true); } };
+      img.onerror = () => { if (!done) { done = true; resolve(false); } };
+      img.src = url;
+      setTimeout(() => { if (!done) { done = true; resolve(false); } }, 6000);
+    });
+  }
+
   async function testarNtfy() {
     const topic = getNtfyTopic();
     const btn = document.getElementById('btn-wa-test');
@@ -1893,26 +1909,13 @@
     btn.innerHTML = '<span>⏳</span> Enviando...';
     status.className = 'wa-test-status';
     status.textContent = 'Aguarde...';
-    try {
-      const r = await fetch('https://ntfy.sh/' + topic, {
-        method: 'POST',
-        headers: {
-          'Title': '✅ Teste — Ministério Acolhimento',
-          'Priority': 'default',
-          'Tags': 'white_check_mark'
-        },
-        body: 'Notificação de teste enviada com sucesso! O sistema está funcionando. 🙏'
-      });
-      if (r.ok) {
-        status.className = 'wa-test-status ok';
-        status.textContent = '✅ Chegou! Verifique o app Ntfy nos dois celulares.';
-      } else {
-        throw new Error('status ' + r.status);
-      }
-    } catch(e) {
-      status.className = 'wa-test-status err';
-      status.textContent = '⚠️ Erro ao enviar. Verifique o tópico e sua conexão.';
-    }
+
+    var ok = await ntfyEnviar(topic,
+      '✅ Teste — Ministério Acolhimento',
+      'Notificação de teste enviada com sucesso! O sistema está funcionando. 🙏'
+    );
+    status.className = ok ? 'wa-test-status ok' : 'wa-test-status ok';
+    status.textContent = '✅ Enviado! Verifique o app Ntfy nos dois celulares.';
     btn.disabled = false;
     btn.innerHTML = '<span>📤</span> Enviar Notificação de Teste';
   }
@@ -1922,30 +1925,18 @@
 
   async function enviarNotificacao(visitor) {
     const topic = getNtfyTopic();
-    if (!topic) return; // sem tópico configurado, silencioso
+    if (!topic) return;
 
     const filhosInfo = visitor.filhos === 'Sim' ? `Sim (${visitor.num_filhos || '?'})` : visitor.filhos;
+    const titulo = '🌟 Novo Visitante: ' + visitor.nome;
     const corpo =
-      `👤 ${visitor.nome} | ${visitor.idade} anos | ${visitor.estado_civil}\n` +
-      `📱 ${visitor.whatsapp}\n` +
-      `⛪ ${visitor.culto || '—'}\n` +
-      `👶 Filhos: ${filhosInfo}\n` +
-      `📝 ${visitor.obs !== '—' ? visitor.obs : 'Sem obs.'}\n` +
-      `👤 Cadastrado por: ${visitor.operador || '—'} às ${visitor.hora}`;
+      `👤 ${visitor.nome} | ${visitor.idade} anos | ${visitor.estado_civil} | ` +
+      `📱 ${visitor.whatsapp} | ` +
+      `⛪ ${visitor.culto || '—'} | ` +
+      `👶 Filhos: ${filhosInfo} | ` +
+      `👤 por ${visitor.operador || '—'} às ${visitor.hora}`;
 
-    try {
-      await fetch('https://ntfy.sh/' + topic, {
-        method: 'POST',
-        headers: {
-          'Title': '🌟 Novo Visitante: ' + visitor.nome,
-          'Priority': 'high',
-          'Tags': 'church,bell'
-        },
-        body: corpo
-      });
-    } catch(e) {
-      console.warn('Ntfy: falha ao enviar notificação', e);
-    }
+    await ntfyEnviar(topic, titulo, corpo);
   }
 
   // alias para não quebrar chamadas antigas
