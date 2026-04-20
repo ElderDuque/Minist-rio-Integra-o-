@@ -1314,6 +1314,133 @@
     min-height: 18px;
   }
 
+
+  /* ===== DELETE AUTH MODAL ===== */
+  #delete-auth-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(8px);
+    z-index: 750;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  #delete-auth-overlay.open { display: flex; }
+
+  .delete-auth-modal {
+    background: linear-gradient(145deg, #1a1010, #0d0b0b);
+    border: 1px solid rgba(231,76,60,0.4);
+    border-radius: 24px;
+    padding: 30px 24px;
+    width: 100%;
+    max-width: 360px;
+    text-align: center;
+    animation: slideUp 0.3s ease;
+  }
+
+  .delete-auth-icon {
+    font-size: 2.5rem;
+    margin-bottom: 12px;
+    display: block;
+  }
+
+  .delete-auth-title {
+    font-family: 'Cinzel', serif;
+    font-size: 1rem;
+    color: #fff;
+    margin-bottom: 6px;
+  }
+
+  .delete-auth-visitor {
+    font-size: 0.8rem;
+    color: #e74c3c;
+    font-weight: 700;
+    margin-bottom: 6px;
+    font-family: 'Lato', sans-serif;
+  }
+
+  .delete-auth-sub {
+    font-size: 0.76rem;
+    color: #a08080;
+    margin-bottom: 22px;
+    line-height: 1.6;
+  }
+
+  .delete-auth-field {
+    text-align: left;
+    margin-bottom: 16px;
+  }
+
+  .delete-auth-field label {
+    font-size: 0.7rem;
+    font-family: 'Lato', sans-serif;
+    font-weight: 700;
+    color: #a08080;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 7px;
+  }
+
+  .delete-auth-field input {
+    width: 100%;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(231,76,60,0.3);
+    border-radius: 12px;
+    padding: 13px 16px;
+    color: #fff;
+    font-family: 'Lato', sans-serif;
+    font-size: 0.95rem;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+  }
+  .delete-auth-field input:focus { border-color: #e74c3c; }
+  .delete-auth-field input::placeholder { color: rgba(255,255,255,0.15); }
+  .delete-auth-field input.error { border-color: #e74c3c !important; animation: shake 0.4s ease; }
+
+  .delete-confirm-btn {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, #922b21, #e74c3c);
+    border: none;
+    border-radius: 14px;
+    color: #fff;
+    font-family: 'Cinzel', serif;
+    font-size: 0.88rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all 0.25s;
+    box-shadow: 0 4px 16px rgba(231,76,60,0.3);
+  }
+  .delete-confirm-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+
+  .delete-cancel-btn {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    color: #a08080;
+    font-family: 'Lato', sans-serif;
+    font-size: 0.8rem;
+    cursor: pointer;
+    margin-top: 10px;
+    display: block;
+    width: 100%;
+    padding: 10px;
+    transition: all 0.2s;
+  }
+  .delete-cancel-btn:hover { color: #fff; border-color: rgba(255,255,255,0.3); }
+
+  .delete-auth-error {
+    font-size: 0.72rem;
+    color: #e74c3c;
+    margin-top: 8px;
+    min-height: 18px;
+  }
+
 </style>
 </head>
 <body>
@@ -1780,13 +1907,43 @@
     `).join('');
   }
 
+  var _deletarId = null;
+
   function deletar(e, id) {
     e.stopPropagation();
-    if (!confirm('Excluir este visitante?')) return;
-    visitors = visitors.filter(v => v.id !== id);
+    var visitor = visitors.find(v => v.id === id);
+    if (!visitor) return;
+    _deletarId = id;
+    document.getElementById('delete-visitor-name').textContent = '👤 ' + visitor.nome;
+    document.getElementById('delete-auth-senha').value = '';
+    document.getElementById('delete-auth-error').textContent = '';
+    document.getElementById('delete-auth-overlay').classList.add('open');
+    setTimeout(() => document.getElementById('delete-auth-senha').focus(), 200);
+  }
+
+  function confirmarDelete() {
+    var senha = document.getElementById('delete-auth-senha').value.trim();
+    if (senha !== AUTH_SENHA) {
+      var input = document.getElementById('delete-auth-senha');
+      input.classList.add('error');
+      setTimeout(() => input.classList.remove('error'), 600);
+      document.getElementById('delete-auth-error').textContent = '❌ Senha incorreta!';
+      input.value = '';
+      input.focus();
+      return;
+    }
+    // Senha correta — deletar
+    visitors = visitors.filter(v => v.id !== _deletarId);
     localStorage.setItem('acolhimento_visitors', JSON.stringify(visitors));
     syncToCloud();
     renderList();
+    cancelarDelete();
+    showToast('🗑 Visitante removido.', '#1a0a0a', '#e74c3c');
+  }
+
+  function cancelarDelete() {
+    document.getElementById('delete-auth-overlay').classList.remove('open');
+    _deletarId = null;
   }
 
   function openModal(id) {
@@ -2318,6 +2475,28 @@
 
     <button class="config-auth-btn" onclick="verificarAuthConfig()">🔓 Entrar</button>
     <button class="config-auth-cancel" onclick="fecharAuthConfig()">Cancelar</button>
+  </div>
+</div>
+
+
+<!-- DELETE AUTH MODAL -->
+<div id="delete-auth-overlay">
+  <div class="delete-auth-modal">
+    <span class="delete-auth-icon">🗑️</span>
+    <div class="delete-auth-title">Excluir Visitante</div>
+    <div class="delete-auth-visitor" id="delete-visitor-name"></div>
+    <p class="delete-auth-sub">Esta ação é irreversível.<br>Digite a senha de administrador para confirmar.</p>
+
+    <div class="delete-auth-field">
+      <label>Senha</label>
+      <input type="password" id="delete-auth-senha" placeholder="••••••••"
+        onkeydown="if(event.key==='Enter') confirmarDelete()">
+    </div>
+
+    <div class="delete-auth-error" id="delete-auth-error"></div>
+
+    <button class="delete-confirm-btn" onclick="confirmarDelete()">🗑 Confirmar Exclusão</button>
+    <button class="delete-cancel-btn" onclick="cancelarDelete()">Cancelar</button>
   </div>
 </div>
 
