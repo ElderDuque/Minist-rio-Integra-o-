@@ -1496,6 +1496,39 @@
   .wa-test-status.ok  { color: #25D366; }
   .wa-test-status.err { color: #e74c3c; }
 
+  /* ===== PWA INSTALL BANNER ===== */
+  #pwa-banner {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    z-index: 8000;
+    padding: 14px 16px 20px;
+    background: linear-gradient(135deg, #0d1b2e 0%, #162640 100%);
+    border-top: 1px solid rgba(74,144,217,0.4);
+    box-shadow: 0 -8px 32px rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    transform: translateY(100%);
+    transition: transform 0.5s cubic-bezier(0.34,1.2,0.64,1);
+  }
+  #pwa-banner.show { transform: translateY(0); }
+  .pwa-banner-icon { font-size: 2.4rem; flex-shrink: 0; animation: glow 3s ease-in-out infinite alternate; }
+  .pwa-banner-text { flex: 1; }
+  .pwa-banner-title { font-family: 'Cinzel', serif; font-size: 0.9rem; color: #fff; font-weight: 700; margin-bottom: 3px; }
+  .pwa-banner-sub { font-size: 0.75rem; color: #7aa8d4; line-height: 1.4; }
+  .pwa-banner-actions { display: flex; flex-direction: column; gap: 7px; flex-shrink: 0; }
+  .pwa-btn-install {
+    background: linear-gradient(135deg, #1a5fa8, #4a90d9);
+    border: none; border-radius: 10px; color: #fff;
+    font-family: 'Cinzel', serif; font-size: 0.75rem; font-weight: 700;
+    letter-spacing: 0.05em; padding: 10px 16px; cursor: pointer;
+    white-space: nowrap; box-shadow: 0 4px 14px rgba(74,144,217,0.4);
+    transition: all 0.2s;
+  }
+  .pwa-btn-install:hover { opacity: 0.9; transform: translateY(-1px); }
+  .pwa-btn-dismiss { background: transparent; border: none; color: #7aa8d4; font-size: 0.7rem; cursor: pointer; text-align: center; padding: 2px; transition: color 0.2s; }
+  .pwa-btn-dismiss:hover { color: #fff; }
+
 </style>
 </head>
 <body>
@@ -1650,41 +1683,35 @@
 <!-- CONFIG VIEW -->
 <div class="view" id="view-config">
   <div class="form-card">
-    <div class="section-label">📱 Notificação WhatsApp</div>
+    <div class="section-label">🔔 Notificação Interna — Ntfy</div>
 
     <div class="field-group">
-      <label>Número do WhatsApp</label>
-      <input type="tel" id="cfg-phone" placeholder="Ex: 553199999999" maxlength="20">
-      <p style="font-size:0.72rem;color:#7aa8d4;margin-top:6px;">Digite com código do país (55) + DDD + número, sem espaços ou traços.</p>
-    </div>
-
-    <div class="field-group">
-      <label>API Key (CallMeBot)</label>
-      <input type="text" id="cfg-apikey" placeholder="Ex: 1258409" maxlength="20">
-      <p style="font-size:0.72rem;color:#7aa8d4;margin-top:6px;">Recebida ao ativar o CallMeBot no WhatsApp.</p>
+      <label>Tópico Ntfy</label>
+      <input type="text" id="cfg-ntfy-topic" placeholder="Ex: acolhimento-ibc" maxlength="60">
+      <p style="font-size:0.72rem;color:#7aa8d4;margin-top:6px;">Crie um tópico secreto em <strong style="color:#fff;">ntfy.sh</strong> e instale o app no celular da esposa e no seu.</p>
     </div>
 
     <button class="btn-submit" onclick="salvarConfig()" style="margin-top:16px;">💾 Salvar Configurações</button>
 
     <div class="wa-test-box">
-      <div class="wa-test-title">📲 Testar WhatsApp</div>
+      <div class="wa-test-title">📲 Testar Notificação</div>
       <p class="wa-test-desc">
-        Envia uma mensagem de teste para os dois números cadastrados sem precisar cadastrar visitante.
+        Envia uma notificação de teste para o tópico Ntfy cadastrado.
       </p>
-      <button class="btn-wa-test" id="btn-wa-test" onclick="testarCallMeBot()">
-        <span>📤</span> Enviar Mensagem de Teste
+      <button class="btn-wa-test" id="btn-wa-test" onclick="testarNtfy()">
+        <span>📤</span> Enviar Notificação de Teste
       </button>
       <div class="wa-test-status" id="wa-test-status"></div>
     </div>
 
-
     <div style="margin-top:20px;padding:16px;background:rgba(74,144,217,0.08);border:1px solid rgba(74,144,217,0.2);border-radius:12px;">
       <p style="font-size:0.75rem;color:#7aa8d4;line-height:1.7;">
-        <strong style="color:#fff;">Como ativar um novo número:</strong><br>
-        1. Salve o contato <strong style="color:#fff;">+34 644 99 26 98</strong><br>
-        2. Mande: <strong style="color:#fff;">I allow callmebot to send me messages</strong><br>
-        3. Você receberá sua API Key<br>
-        4. Preencha os campos acima e salve
+        <strong style="color:#fff;">Como configurar o Ntfy:</strong><br>
+        1. Baixe o app <strong style="color:#fff;">Ntfy</strong> na Play Store (gratuito)<br>
+        2. Crie um tópico secreto qualquer, ex: <strong style="color:#fff;">acolhimento-ibc-2026</strong><br>
+        3. Inscreva-se no tópico dentro do app (você e a esposa)<br>
+        4. Cole o nome do tópico no campo acima e salve<br>
+        5. Clique em "Testar" para confirmar que chegou nos dois celulares 🎉
       </p>
     </div>
 
@@ -1772,6 +1799,19 @@
   </div>
 </div>
 
+<!-- PWA INSTALL BANNER -->
+<div id="pwa-banner">
+  <div class="pwa-banner-icon">✝</div>
+  <div class="pwa-banner-text">
+    <div class="pwa-banner-title">Instalar App</div>
+    <div class="pwa-banner-sub">Adicione à tela inicial e use<br>como app nativo, sem precisar do navegador!</div>
+  </div>
+  <div class="pwa-banner-actions">
+    <button class="pwa-btn-install" id="pwa-btn-install">⬇ Instalar</button>
+    <button class="pwa-btn-dismiss" id="pwa-btn-dismiss">Agora não</button>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast">✅ Visitante cadastrado!</div>
 
@@ -1796,16 +1836,14 @@
     document.getElementById('children-count').classList.toggle('visible', val === 'Sim');
   }
 
-  // ===== CONFIGURAÇÃO WHATSAPP =====
-  const WA_DEFAULT_PHONE = '55987958154';
-  const WA_DEFAULT_APIKEY = '9607737';
+  // ===== CONFIGURAÇÃO NTFY =====
+  const NTFY_DEFAULT_TOPIC = '';
 
-  function getConfig() {
-    return {
-      phone: localStorage.getItem('wa_phone') || WA_DEFAULT_PHONE,
-      apikey: localStorage.getItem('wa_apikey') || WA_DEFAULT_APIKEY
-    };
+  function getNtfyTopic() {
+    return localStorage.getItem('ntfy_topic') || NTFY_DEFAULT_TOPIC;
   }
+
+  function getConfig() { return { phone: '', apikey: '' }; }
 
   
   function carregarCloudConfig() {
@@ -1829,87 +1867,90 @@
   }
 
   function carregarConfig() {
-    const cfg = getConfig();
-    document.getElementById('cfg-phone').value = cfg.phone;
-    document.getElementById('cfg-apikey').value = cfg.apikey;
+    document.getElementById('cfg-ntfy-topic').value = getNtfyTopic();
   }
 
   function salvarConfig() {
-    const phone = document.getElementById('cfg-phone').value.trim();
-    const apikey = document.getElementById('cfg-apikey').value.trim();
-    if (!phone || !apikey) {
-      showToast('⚠️ Preencha número e API Key!', '#1a2a4a', '#4a90d9');
+    const topic = document.getElementById('cfg-ntfy-topic').value.trim();
+    if (!topic) {
+      showToast('⚠️ Digite o nome do tópico Ntfy!', '#1a2a4a', '#e74c3c');
       return;
     }
-    localStorage.setItem('wa_phone', phone);
-    localStorage.setItem('wa_apikey', apikey);
-    showToast('✅ Configurações salvas!');
+    localStorage.setItem('ntfy_topic', topic);
+    showToast('✅ Tópico Ntfy salvo!');
   }
 
-  async function testarWhatsApp() {
-    const cfg = getConfig();
-    const msg = `✝ Teste do App - Ministério de Acolhimento!\n\nSe você recebeu esta mensagem, a configuração está funcionando corretamente. 🙌`;
-    const url = `https://api.callmebot.com/whatsapp.php?phone=${cfg.phone}&text=${encodeURIComponent(msg)}&apikey=${cfg.apikey}`;
-    showToast('📤 Enviando mensagem de teste...');
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.onload = img.onerror = () => { showToast('✅ Teste enviado! Verifique o WhatsApp.'); resolve(); };
-      img.src = url;
-      setTimeout(() => { showToast('✅ Teste enviado! Verifique o WhatsApp.'); resolve(); }, 3000);
-    });
-  }
-
-  async function enviarWhatsApp(visitor) {
-    const filhosInfo = visitor.filhos === 'Sim' ? `Sim (${visitor.num_filhos || '?'})` : visitor.filhos;
-    const msg = 
-      `🌟 Seja muito bem-vindo(a) à Igreja Batista Central! 🌟\n\n` +
-      `Olá, ${visitor.nome}! Que alegria ter você aqui conosco!\n\n` +
-      `Estamos felizes em receber você em nossa família da fé. Aqui você encontrará um lugar onde a *Adoração é sincera*, *As pessoas não são perfeitas, mas estão crescendo*, a *Comunhão é autêntica* e *Amamos a Revelação da Palavra e a Presença do Espírito Santo*.\n\n` +
-      `📅 *Nossos cultos:*\n` +
-      `• Domingo – 9:45h → *Culto de Celebração*\n` +
-      `• Terça-feira – 9:00h → *Culto ABA*\n` +
-      `• Quinta-feira – 19:30h → *Quinta Profética*\n\n` +
-      `Venha como você está! Deus tem um propósito lindo para sua vida e nós queremos caminhar com você nessa jornada. 🙏\n\n` +
-      `Se precisar de qualquer informação, oração ou apenas quiser conversar, nossos irmãos estão à disposição para te acolher com muito carinho.\n\n` +
-      `Que a paz de Jesus encha o seu coração hoje!\n\n` +
-      `📱 *Siga nossas redes sociais:*\n` +
-      `📸 Instagram: @ibcnovalima\n` +
-      `🔗 bio.site/ibcnovalima\n\n` +
-      `📍 Travessa Machado de Assis, 57 – Centro, Nova Lima\n\n` +
-      `---\n` +
-      `📋 *Dados do cadastro:*\n` +
-      `👤 *Nome:* ${visitor.nome}\n` +
-      `🎂 *Idade:* ${visitor.idade} anos\n` +
-      `💍 *Estado Civil:* ${visitor.estado_civil}\n` +
-      `📱 *WhatsApp:* ${visitor.whatsapp}\n` +
-      `⛪ *Culto:* ${visitor.culto || '—'}\n` +
-      `👶 *Filhos:* ${filhosInfo}\n` +
-      `📝 *Obs:* ${visitor.obs}\n` +
-      `📅 *Data:* ${visitor.data} às ${visitor.hora || ''}\n` +
-      `👤 *Cadastrado por:* ${visitor.operador || '—'}`;
-
-    // ── Número 1: Esposa (principal) ──────────────────
-    const PHONE1 = '55987958154';
-    const APIKEY1 = '9607737';
-    // ── Número 2: Elder (backup) ───────────────────────
-    const PHONE2 = '553193800471';
-    const APIKEY2 = '1258409';
-
-    function enviar(phone, apikey) {
-      return new Promise((resolve) => {
-        const url = `https://api.callmebot.com/whatsapp.php?phone=${phone}&text=${encodeURIComponent(msg)}&apikey=${apikey}`;
-        const img = new Image();
-        img.onload = img.onerror = () => resolve();
-        img.src = url;
-        setTimeout(resolve, 3000);
-      });
+  async function testarNtfy() {
+    const topic = getNtfyTopic();
+    const btn = document.getElementById('btn-wa-test');
+    const status = document.getElementById('wa-test-status');
+    if (!topic) {
+      status.className = 'wa-test-status err';
+      status.textContent = '⚠️ Configure o tópico Ntfy primeiro!';
+      return;
     }
+    btn.disabled = true;
+    btn.innerHTML = '<span>⏳</span> Enviando...';
+    status.className = 'wa-test-status';
+    status.textContent = 'Aguarde...';
+    try {
+      const r = await fetch('https://ntfy.sh/' + topic, {
+        method: 'POST',
+        headers: {
+          'Title': '✅ Teste — Ministério Acolhimento',
+          'Priority': 'default',
+          'Tags': 'white_check_mark'
+        },
+        body: 'Notificação de teste enviada com sucesso! O sistema está funcionando. 🙏'
+      });
+      if (r.ok) {
+        status.className = 'wa-test-status ok';
+        status.textContent = '✅ Chegou! Verifique o app Ntfy nos dois celulares.';
+      } else {
+        throw new Error('status ' + r.status);
+      }
+    } catch(e) {
+      status.className = 'wa-test-status err';
+      status.textContent = '⚠️ Erro ao enviar. Verifique o tópico e sua conexão.';
+    }
+    btn.disabled = false;
+    btn.innerHTML = '<span>📤</span> Enviar Notificação de Teste';
+  }
 
-    // Envia para os dois números em paralelo
-    return Promise.all([
-      enviar(PHONE1, APIKEY1),
-      enviar(PHONE2, APIKEY2)
-    ]);
+  // mantida para compatibilidade
+  async function testarWhatsApp() { await testarNtfy(); }
+
+  async function enviarNotificacao(visitor) {
+    const topic = getNtfyTopic();
+    if (!topic) return; // sem tópico configurado, silencioso
+
+    const filhosInfo = visitor.filhos === 'Sim' ? `Sim (${visitor.num_filhos || '?'})` : visitor.filhos;
+    const corpo =
+      `👤 ${visitor.nome} | ${visitor.idade} anos | ${visitor.estado_civil}\n` +
+      `📱 ${visitor.whatsapp}\n` +
+      `⛪ ${visitor.culto || '—'}\n` +
+      `👶 Filhos: ${filhosInfo}\n` +
+      `📝 ${visitor.obs !== '—' ? visitor.obs : 'Sem obs.'}\n` +
+      `👤 Cadastrado por: ${visitor.operador || '—'} às ${visitor.hora}`;
+
+    try {
+      await fetch('https://ntfy.sh/' + topic, {
+        method: 'POST',
+        headers: {
+          'Title': '🌟 Novo Visitante: ' + visitor.nome,
+          'Priority': 'high',
+          'Tags': 'church,bell'
+        },
+        body: corpo
+      });
+    } catch(e) {
+      console.warn('Ntfy: falha ao enviar notificação', e);
+    }
+  }
+
+  // alias para não quebrar chamadas antigas
+  async function enviarWhatsApp(visitor) {
+    return enviarNotificacao(visitor);
   }
 
   async function salvarVisitante() {
@@ -2239,17 +2280,11 @@
     const btn = document.getElementById('chat-send-btn');
     btn.disabled = true;
 
-    // Remetente fixo: número da esposa (quem envia a mensagem ao visitante)
-    const CHAT_PHONE  = '55987958154';
-    const CHAT_APIKEY = '9607737';
-
+    // Monta número de destino
     const visitorPhone = currentChatVisitor.whatsapp.replace(/\D/g, '');
     const fullPhone = visitorPhone.startsWith('55') ? visitorPhone : '55' + visitorPhone;
 
-    const msgFormatted = `✝ *Ministério Acolhimento*\n\n${text}\n\n_Responda pelo WhatsApp para retornar contato._`;
-    const url = `https://api.callmebot.com/whatsapp.php?phone=${fullPhone}&text=${encodeURIComponent(msgFormatted)}&apikey=${CHAT_APIKEY}`;
-
-    // Save message locally first
+    // Salva mensagem localmente
     const key = 'v_' + currentChatVisitor.id;
     if (!chatHistory[key]) chatHistory[key] = [];
 
@@ -2264,25 +2299,15 @@
     input.style.height = 'auto';
     renderChatMessages();
 
-    // Send via CallMeBot
-    try {
-      await new Promise((resolve) => {
-        const img = new Image();
-        img.onload = img.onerror = resolve;
-        img.src = url;
-        setTimeout(resolve, 3000);
-      });
-      // Add system confirmation
-      chatHistory[key].push({ type: 'system', text: '✅ Mensagem entregue via WhatsApp' });
-      localStorage.setItem('acolhimento_chats', JSON.stringify(chatHistory));
-      syncToCloud();
-      renderChatMessages();
-    } catch(e) {
-      chatHistory[key].push({ type: 'system', text: '⚠️ Falha no envio. Verifique a Config.' });
-      localStorage.setItem('acolhimento_chats', JSON.stringify(chatHistory));
-      syncToCloud();
-      renderChatMessages();
-    }
+    // Abre WhatsApp diretamente — sem API nenhuma
+    const msgFormatted = `✝ *Ministério Acolhimento*\n\n${text}`;
+    const waUrl = `https://wa.me/${fullPhone}?text=${encodeURIComponent(msgFormatted)}`;
+    window.open(waUrl, '_blank');
+
+    chatHistory[key].push({ type: 'system', text: '📲 WhatsApp aberto — envie a mensagem pelo seu celular' });
+    localStorage.setItem('acolhimento_chats', JSON.stringify(chatHistory));
+    syncToCloud();
+    renderChatMessages();
 
     btn.disabled = false;
   }
@@ -2397,52 +2422,6 @@
 
 
 
-
-  // ===== WHATSAPP TEST =====
-  async function testarCallMeBot() {
-    var btn = document.getElementById('btn-wa-test');
-    var status = document.getElementById('wa-test-status');
-    btn.disabled = true;
-    btn.innerHTML = '<span>⏳</span> Enviando...';
-    status.className = 'wa-test-status';
-    status.textContent = 'Aguarde, enviando para os dois números...';
-
-    var agora = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
-    var msg = '✅ *Teste CallMeBot — Ministério Acolhimento*\n\n' +
-              'Mensagem de teste enviada às ' + agora + '.\n' +
-              'Se você recebeu isso, o WhatsApp está funcionando corretamente! 🙏';
-
-    var PHONE1 = '55987958154', APIKEY1 = '9607737';
-    var PHONE2 = '553193800471', APIKEY2 = '1258409';
-
-    function enviarTeste(phone, apikey) {
-      return new Promise((resolve) => {
-        var url = 'https://api.callmebot.com/whatsapp.php?phone=' + phone +
-                  '&text=' + encodeURIComponent(msg) + '&apikey=' + apikey;
-        var img = new Image();
-        var done = false;
-        img.onload = () => { if (!done) { done = true; resolve(true); } };
-        img.onerror = () => { if (!done) { done = true; resolve(false); } };
-        img.src = url;
-        setTimeout(() => { if (!done) { done = true; resolve(false); } }, 5000);
-      });
-    }
-
-    try {
-      var [r1, r2] = await Promise.all([
-        enviarTeste(PHONE1, APIKEY1),
-        enviarTeste(PHONE2, APIKEY2)
-      ]);
-      status.className = 'wa-test-status ok';
-      status.textContent = '✅ Enviado! Verifique o WhatsApp dos dois números.';
-    } catch(e) {
-      status.className = 'wa-test-status err';
-      status.textContent = '⚠️ Erro ao enviar. Verifique sua conexão.';
-    }
-
-    btn.disabled = false;
-    btn.innerHTML = '<span>📤</span> Enviar Mensagem de Teste';
-  }
 
   // ===== CONFIG AUTH =====
   var AUTH_NOME  = 'Elder';
@@ -2604,6 +2583,53 @@
       });
     });
   }
+
+  // ===== PWA INSTALL BANNER =====
+  (function() {
+    var deferredPrompt = null;
+    var banner = document.getElementById('pwa-banner');
+    var btnInstall = document.getElementById('pwa-btn-install');
+    var btnDismiss = document.getElementById('pwa-btn-dismiss');
+
+    // Não mostrar se já instalado ou se já dispensou
+    if (window.matchMedia('(display-mode: standalone)').matches) return;
+    if (localStorage.getItem('pwa_dismissed')) return;
+
+    // Captura o evento nativo do Chrome antes de mostrar o prompt
+    window.addEventListener('beforeinstallprompt', function(e) {
+      e.preventDefault();
+      deferredPrompt = e;
+      // Mostra o banner com delay suave após o splash
+      setTimeout(function() {
+        banner.classList.add('show');
+      }, 5000);
+    });
+
+    // Botão instalar
+    btnInstall.addEventListener('click', function() {
+      if (!deferredPrompt) return;
+      banner.classList.remove('show');
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then(function(result) {
+        if (result.outcome === 'accepted') {
+          localStorage.setItem('pwa_dismissed', '1');
+        }
+        deferredPrompt = null;
+      });
+    });
+
+    // Botão dispensar
+    btnDismiss.addEventListener('click', function() {
+      banner.classList.remove('show');
+      localStorage.setItem('pwa_dismissed', '1');
+    });
+
+    // Se instalou com sucesso, esconde
+    window.addEventListener('appinstalled', function() {
+      banner.classList.remove('show');
+      localStorage.setItem('pwa_dismissed', '1');
+    });
+  })();
 
 </script>
 
