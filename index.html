@@ -1189,6 +1189,131 @@
     to   { opacity: 1; transform: translateY(0); }
   }
 
+
+  /* ===== CONFIG AUTH MODAL ===== */
+  #config-auth-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    backdrop-filter: blur(8px);
+    z-index: 700;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  #config-auth-overlay.open { display: flex; }
+
+  .config-auth-modal {
+    background: linear-gradient(145deg, #162640, #0d1b2e);
+    border: 1px solid rgba(74,144,217,0.3);
+    border-radius: 24px;
+    padding: 32px 24px;
+    width: 100%;
+    max-width: 360px;
+    text-align: center;
+    animation: slideUp 0.3s ease;
+  }
+
+  .config-auth-icon {
+    font-size: 2.5rem;
+    margin-bottom: 14px;
+    display: block;
+  }
+
+  .config-auth-title {
+    font-family: 'Cinzel', serif;
+    font-size: 1.05rem;
+    color: #fff;
+    margin-bottom: 6px;
+  }
+
+  .config-auth-sub {
+    font-size: 0.78rem;
+    color: #7aa8d4;
+    margin-bottom: 24px;
+    line-height: 1.6;
+  }
+
+  .config-auth-field {
+    text-align: left;
+    margin-bottom: 14px;
+  }
+
+  .config-auth-field label {
+    font-size: 0.7rem;
+    font-family: 'Lato', sans-serif;
+    font-weight: 700;
+    color: #7aa8d4;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 7px;
+  }
+
+  .config-auth-field input {
+    width: 100%;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(74,144,217,0.3);
+    border-radius: 12px;
+    padding: 13px 16px;
+    color: #fff;
+    font-family: 'Lato', sans-serif;
+    font-size: 0.95rem;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+  }
+  .config-auth-field input:focus { border-color: #4a90d9; }
+  .config-auth-field input::placeholder { color: rgba(255,255,255,0.2); }
+  .config-auth-field input.error { border-color: #e74c3c !important; animation: shake 0.4s ease; }
+
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    20%,60%  { transform: translateX(-6px); }
+    40%,80%  { transform: translateX(6px); }
+  }
+
+  .config-auth-btn {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, #1a5fa8, #4a90d9);
+    border: none;
+    border-radius: 14px;
+    color: #fff;
+    font-family: 'Cinzel', serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all 0.25s;
+    margin-top: 6px;
+    box-shadow: 0 4px 16px rgba(74,144,217,0.3);
+  }
+  .config-auth-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+
+  .config-auth-cancel {
+    background: transparent;
+    border: none;
+    color: #7aa8d4;
+    font-family: 'Lato', sans-serif;
+    font-size: 0.8rem;
+    cursor: pointer;
+    margin-top: 14px;
+    display: block;
+    width: 100%;
+    padding: 8px;
+    transition: color 0.2s;
+  }
+  .config-auth-cancel:hover { color: #fff; }
+
+  .config-auth-attempts {
+    font-size: 0.72rem;
+    color: #e74c3c;
+    margin-top: 10px;
+    min-height: 18px;
+  }
+
 </style>
 </head>
 <body>
@@ -1230,7 +1355,7 @@
   <button class="nav-tab active" onclick="switchTab('form')">✏️ Cadastrar</button>
   <button class="nav-tab" onclick="switchTab('list')">📋 Visitantes</button>
   <button class="nav-tab" onclick="switchTab('msg')">💬 Mensagens</button>
-  <button class="nav-tab" onclick="switchTab('config')">⚙️ Config</button>
+  <button class="nav-tab" id="tab-config" onclick="abrirConfig()">⚙️ Config</button>
 </div>
 
 <!-- FORM VIEW -->
@@ -1469,7 +1594,7 @@
     document.getElementById('view-' + tab).classList.add('active');
     event.target.classList.add('active');
     if (tab === 'list') renderList();
-    if (tab === 'config') carregarConfig();
+    if (tab === 'config') { carregarConfig(); document.getElementById('tab-config').classList.add('active'); }
     if (tab === 'msg') renderMsgList();
   }
 
@@ -2007,6 +2132,61 @@
 
 
 
+
+  // ===== CONFIG AUTH =====
+  var AUTH_NOME  = 'Elder';
+  var AUTH_SENHA = '2026Elder';
+  var authTentativas = 0;
+  var configDesbloqueado = false;
+
+  function abrirConfig() {
+    if (configDesbloqueado) {
+      switchTab('config');
+      return;
+    }
+    // Show auth modal
+    document.getElementById('config-auth-overlay').classList.add('open');
+    document.getElementById('auth-nome').value = '';
+    document.getElementById('auth-senha').value = '';
+    document.getElementById('auth-attempts').textContent = '';
+    setTimeout(() => document.getElementById('auth-nome').focus(), 200);
+  }
+
+  function fecharAuthConfig() {
+    document.getElementById('config-auth-overlay').classList.remove('open');
+  }
+
+  function verificarAuthConfig() {
+    var nome  = document.getElementById('auth-nome').value.trim();
+    var senha = document.getElementById('auth-senha').value.trim();
+
+    if (nome === AUTH_NOME && senha === AUTH_SENHA) {
+      configDesbloqueado = true;
+      authTentativas = 0;
+      fecharAuthConfig();
+      switchTab('config');
+      showToast('✅ Bem-vindo, Elder! Acesso liberado.', '#0d1b2e', '#2ecc71');
+    } else {
+      authTentativas++;
+      var nomeInput  = document.getElementById('auth-nome');
+      var senhaInput = document.getElementById('auth-senha');
+      nomeInput.classList.add('error');
+      senhaInput.classList.add('error');
+      setTimeout(() => { nomeInput.classList.remove('error'); senhaInput.classList.remove('error'); }, 600);
+
+      var msg = 'Nome ou senha incorretos.';
+      if (authTentativas >= 3) {
+        msg = '⚠️ Muitas tentativas. Verifique os dados.';
+      }
+      document.getElementById('auth-attempts').textContent = msg;
+      document.getElementById('auth-senha').value = '';
+      document.getElementById('auth-senha').focus();
+    }
+  }
+
+  // Lock config again when switching away
+  var _origSwitchTab = null;
+
   // ===== CULTO SELECTOR =====
   var cultoSelecionado = null;
 
@@ -2115,5 +2295,31 @@
   }
 
 </script>
+
+<!-- CONFIG AUTH MODAL -->
+<div id="config-auth-overlay">
+  <div class="config-auth-modal">
+    <span class="config-auth-icon">🔐</span>
+    <div class="config-auth-title">Acesso Restrito</div>
+    <p class="config-auth-sub">Esta área é exclusiva do administrador.<br>Identifique-se para continuar.</p>
+
+    <div class="config-auth-field">
+      <label>Nome</label>
+      <input type="text" id="auth-nome" placeholder="Seu nome"
+        onkeydown="if(event.key==='Enter') document.getElementById('auth-senha').focus()">
+    </div>
+    <div class="config-auth-field">
+      <label>Senha</label>
+      <input type="password" id="auth-senha" placeholder="••••••••"
+        onkeydown="if(event.key==='Enter') verificarAuthConfig()">
+    </div>
+
+    <div class="config-auth-attempts" id="auth-attempts"></div>
+
+    <button class="config-auth-btn" onclick="verificarAuthConfig()">🔓 Entrar</button>
+    <button class="config-auth-cancel" onclick="fecharAuthConfig()">Cancelar</button>
+  </div>
+</div>
+
 </body>
 </html>
