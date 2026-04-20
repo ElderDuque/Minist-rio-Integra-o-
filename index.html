@@ -1099,6 +1099,10 @@
       <span>📲</span> Abrir WhatsApp e Convidar
     </button>
 
+    <button class="btn-unlock" style="background: linear-gradient(135deg, #1a5fa8, #4a90d9); box-shadow: 0 6px 20px rgba(74,144,217,0.3);" onclick="enviarBoasVindas()">
+      <span>🌟</span> Enviar Boas-Vindas à Igreja
+    </button>
+
     <button class="btn-skip" onclick="fecharSuccessModal()">
       Pular por agora
     </button>
@@ -1395,6 +1399,31 @@
       `👉 _I allow callmebot to send me messages_\n\n` +
       `Assim poderemos nos comunicar com você com mais facilidade! 🙏\n\n` +
       `Que Deus abençoe você!`;
+
+    const url = `https://wa.me/${fullPhone}?text=${encodeURIComponent(msg)}`;
+    window.open(url, '_blank');
+    fecharSuccessModal();
+  }
+
+  function enviarBoasVindas() {
+    if (!lastRegisteredVisitor) return;
+
+    const phone = lastRegisteredVisitor.whatsapp.replace(/\D/g, '');
+    const fullPhone = phone.startsWith('55') ? phone : '55' + phone;
+    const nome = lastRegisteredVisitor.nome.split(' ')[0]; // primeiro nome
+
+    const msg =
+      `🌟 Seja muito bem-vindo(a) à Igreja Batista Central! 🌟\n\n` +
+      `Olá, ${nome}! Que alegria ter você aqui conosco!\n\n` +
+      `Estamos felizes em receber você em nossa casa de oração. Aqui você encontrará um lugar de *adoração sincera*, *Palavra de Deus*, *comunhão* e *crescimento espiritual*.\n\n` +
+      `📅 *Nossos cultos:*\n` +
+      `• Domingo – 9:45h → *Culto de Celebração*\n` +
+      `• Terça-feira – 9:00h → *Culto ABA*\n` +
+      `• Quinta-feira – 19:30h → *Quinta Profética*\n\n` +
+      `Venha como você está! Deus tem um propósito lindo na sua vida e nós queremos caminhar com você nessa jornada. 🙏\n\n` +
+      `Se precisar de qualquer informação, oração ou apenas quiser conversar, nossos irmãos estão à disposição para te acolher com muito carinho.\n\n` +
+      `Que a paz de Jesus encha o seu coração hoje!\n\n` +
+      `*Bem-vindo(a) à família da Igreja Batista Central!* 🙌`;
 
     const url = `https://wa.me/${fullPhone}?text=${encodeURIComponent(msg)}`;
     window.open(url, '_blank');
