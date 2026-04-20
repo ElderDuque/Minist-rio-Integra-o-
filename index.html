@@ -1688,9 +1688,6 @@
       </p>
     </div>
 
-    <div style="margin-top:16px;">
-      <button class="btn-export" style="width:100%;padding:12px;text-align:center;" onclick="testarWhatsApp()">📤 Enviar Mensagem de Teste</button>
-    </div>
   </div>
 </div>
 
@@ -2242,12 +2239,15 @@
     const btn = document.getElementById('chat-send-btn');
     btn.disabled = true;
 
-    const cfg = getConfig();
+    // Remetente fixo: número da esposa (quem envia a mensagem ao visitante)
+    const CHAT_PHONE  = '55987958154';
+    const CHAT_APIKEY = '9607737';
+
     const visitorPhone = currentChatVisitor.whatsapp.replace(/\D/g, '');
     const fullPhone = visitorPhone.startsWith('55') ? visitorPhone : '55' + visitorPhone;
 
     const msgFormatted = `✝ *Ministério Acolhimento*\n\n${text}\n\n_Responda pelo WhatsApp para retornar contato._`;
-    const url = `https://api.callmebot.com/whatsapp.php?phone=${fullPhone}&text=${encodeURIComponent(msgFormatted)}&apikey=${cfg.apikey}`;
+    const url = `https://api.callmebot.com/whatsapp.php?phone=${fullPhone}&text=${encodeURIComponent(msgFormatted)}&apikey=${CHAT_APIKEY}`;
 
     // Save message locally first
     const key = 'v_' + currentChatVisitor.id;
