@@ -1798,15 +1798,31 @@
   async function enviarWhatsApp(visitor) {
     const filhosInfo = visitor.filhos === 'Sim' ? `Sim (${visitor.num_filhos || '?'})` : visitor.filhos;
     const msg = 
-      `✝ *Novo Visitante Registrado!*\n\n` +
+      `🌟 Seja muito bem-vindo(a) à Igreja Batista Central! 🌟\n\n` +
+      `Olá, ${visitor.nome}! Que alegria ter você aqui conosco!\n\n` +
+      `Estamos felizes em receber você em nossa família da fé. Aqui você encontrará um lugar onde a *Adoração é sincera*, *As pessoas não são perfeitas, mas estão crescendo*, a *Comunhão é autêntica* e *Amamos a Revelação da Palavra e a Presença do Espírito Santo*.\n\n` +
+      `📅 *Nossos cultos:*\n` +
+      `• Domingo – 9:45h → *Culto de Celebração*\n` +
+      `• Terça-feira – 9:00h → *Culto ABA*\n` +
+      `• Quinta-feira – 19:30h → *Quinta Profética*\n\n` +
+      `Venha como você está! Deus tem um propósito lindo para sua vida e nós queremos caminhar com você nessa jornada. 🙏\n\n` +
+      `Se precisar de qualquer informação, oração ou apenas quiser conversar, nossos irmãos estão à disposição para te acolher com muito carinho.\n\n` +
+      `Que a paz de Jesus encha o seu coração hoje!\n\n` +
+      `📱 *Siga nossas redes sociais:*\n` +
+      `📸 Instagram: @ibcnovalima\n` +
+      `🔗 bio.site/ibcnovalima\n\n` +
+      `📍 Travessa Machado de Assis, 57 – Centro, Nova Lima\n\n` +
+      `---\n` +
+      `📋 *Dados do cadastro:*\n` +
       `👤 *Nome:* ${visitor.nome}\n` +
       `🎂 *Idade:* ${visitor.idade} anos\n` +
       `💍 *Estado Civil:* ${visitor.estado_civil}\n` +
       `📱 *WhatsApp:* ${visitor.whatsapp}\n` +
-      `📍 *Endereço:* ${visitor.endereco}\n` +
+      `⛪ *Culto:* ${visitor.culto || '—'}\n` +
       `👶 *Filhos:* ${filhosInfo}\n` +
       `📝 *Obs:* ${visitor.obs}\n` +
-      `📅 *Data:* ${visitor.data}`;
+      `📅 *Data:* ${visitor.data} às ${visitor.hora || ''}\n` +
+      `👤 *Cadastrado por:* ${visitor.operador || '—'}`;
 
     const cfg = getConfig();
     const url = `https://api.callmebot.com/whatsapp.php?phone=${cfg.phone}&text=${encodeURIComponent(msg)}&apikey=${cfg.apikey}`;
