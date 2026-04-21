@@ -1880,18 +1880,20 @@
     showToast('✅ Tópico Ntfy salvo!');
   }
 
-  // Envia notificação via ntfy.sh com no-cors para evitar bloqueio do browser
+  // Envia via ntfy.sh — usa JSON body com no-cors (único jeito que funciona no browser)
   async function ntfyEnviar(topic, titulo, mensagem) {
     try {
-      await fetch('https://ntfy.sh/' + topic, {
+      // JSON body aceita title+message sem depender de headers customizados
+      await fetch('https://ntfy.sh/', {
         method: 'POST',
         mode: 'no-cors',
-        headers: {
-          'Content-Type': 'text/plain',
-          'Title': titulo,
-          'Priority': 'high'
-        },
-        body: mensagem
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          topic: topic,
+          title: titulo,
+          message: mensagem,
+          priority: 4
+        })
       });
       return true;
     } catch(e) {
