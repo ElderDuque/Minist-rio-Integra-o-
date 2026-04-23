@@ -1570,6 +1570,10 @@
   <button class="nav-tab active" onclick="switchTab('form')">✏️ Cadastrar</button>
   <button class="nav-tab" onclick="switchTab('list')">📋 Visitantes</button>
   <button class="nav-tab" onclick="switchTab('msg')">💬 Mensagens</button>
+  <button class="nav-tab" id="tab-feed" onclick="switchTab('feed')" style="position:relative;">
+    📬 Feed
+    <span id="feed-badge" style="display:none;position:absolute;top:4px;right:4px;background:#e74c3c;color:#fff;font-size:0.55rem;font-weight:900;border-radius:50%;width:16px;height:16px;line-height:16px;text-align:center;">0</span>
+  </button>
   <button class="nav-tab" id="tab-config" onclick="abrirConfig()">⚙️ Config</button>
 </div>
 
@@ -1685,6 +1689,20 @@
   <div class="form-card">
     <div class="section-label">🔔 Notificação Interna — Ntfy</div>
 
+    <!-- Toggle ativar/desativar notificações -->
+    <div style="display:flex;align-items:center;justify-content:space-between;background:rgba(74,144,217,0.08);border:1px solid rgba(74,144,217,0.2);border-radius:14px;padding:14px 16px;margin-bottom:16px;">
+      <div>
+        <div style="font-size:0.85rem;font-weight:700;color:#fff;margin-bottom:2px;">Enviar notificações</div>
+        <div style="font-size:0.72rem;color:#7aa8d4;" id="ntfy-toggle-desc">Ativo — notificações serão enviadas ao cadastrar</div>
+      </div>
+      <label style="position:relative;display:inline-block;width:48px;height:26px;flex-shrink:0;">
+        <input type="checkbox" id="ntfy-toggle-input" onchange="alterarStatusNtfy(this.checked)" style="opacity:0;width:0;height:0;">
+        <span id="ntfy-toggle-slider" style="position:absolute;cursor:pointer;inset:0;background:#1e3354;border-radius:34px;transition:.3s;border:1px solid rgba(74,144,217,0.3);">
+          <span id="ntfy-toggle-knob" style="position:absolute;height:20px;width:20px;left:3px;bottom:2px;background:#7aa8d4;border-radius:50%;transition:.3s;"></span>
+        </span>
+      </label>
+    </div>
+
     <div class="field-group">
       <label>Tópico Ntfy</label>
       <input type="text" id="cfg-ntfy-topic" placeholder="Ex: acolhimento-ibc" maxlength="60">
@@ -1725,6 +1743,24 @@
     <span class="list-count">Selecione um visitante para enviar mensagem</span>
   </div>
   <div class="msg-visitor-list" id="msg-visitor-list"></div>
+</div>
+
+
+<!-- FEED VIEW -->
+<div class="view" id="view-feed">
+  <div class="list-header" style="margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;">
+    <span class="list-count" id="feed-count">📬 Feed de Notificações</span>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <span id="feed-status-dot" style="width:8px;height:8px;border-radius:50%;background:#7aa8d4;display:inline-block;"></span>
+      <span id="feed-status-text" style="font-size:0.68rem;color:#7aa8d4;">desconectado</span>
+      <button onclick="limparFeed()" style="background:rgba(231,76,60,0.1);border:1px solid rgba(231,76,60,0.25);border-radius:8px;color:#e74c3c;font-size:0.65rem;padding:4px 8px;cursor:pointer;">🗑 Limpar</button>
+    </div>
+  </div>
+  <div id="feed-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+  <div id="feed-empty" style="text-align:center;padding:48px 20px;color:#7aa8d4;">
+    <div style="font-size:2.5rem;margin-bottom:12px;">📭</div>
+    <p style="font-size:0.85rem;line-height:1.6;">Nenhuma notificação ainda.<br>As mensagens do ntfy aparecerão aqui<br>em tempo real assim que chegarem.</p>
+  </div>
 </div>
 
 
@@ -1823,10 +1859,11 @@
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
     document.getElementById('view-' + tab).classList.add('active');
-    event.target.classList.add('active');
+    if (event && event.target) event.target.classList.add('active');
     if (tab === 'list') renderList();
     if (tab === 'config') { carregarConfig(); document.getElementById('tab-config').classList.add('active'); }
     if (tab === 'msg') renderMsgList();
+    if (tab === 'feed') { var tf = document.getElementById('tab-feed'); if(tf) tf.classList.add('active'); }
   }
 
   function toggleFilhos(val) {
@@ -1932,6 +1969,7 @@
   async function enviarNotificacao(visitor) {
     const topic = getNtfyTopic();
     if (!topic) return;
+    if (!getNtfyAtivo()) return; // respeita o toggle
 
     const filhosInfo = visitor.filhos === 'Sim' ? `Sim (${visitor.num_filhos || '?'})` : visitor.filhos;
     const titulo = '🌟 Novo Visitante: ' + visitor.nome;
@@ -2627,6 +2665,225 @@
       localStorage.setItem('pwa_dismissed', '1');
     });
   })();
+
+  // ===== FEED NTFY (SSE) =====
+  var feedEventSource = null;
+  var feedMsgs = JSON.parse(localStorage.getItem('acolhimento_feed') || '[]');
+  var feedUnread = 0;
+
+  function getNtfyAtivo() {
+    return localStorage.getItem('ntfy_ativo') !== 'false'; // default: ativo
+  }
+
+  function alterarStatusNtfy(ativo) {
+    localStorage.setItem('ntfy_ativo', ativo ? 'true' : 'false');
+    atualizarToggleUI(ativo);
+    showToast(ativo ? '🔔 Notificações ativadas!' : '🔕 Notificações desativadas!',
+              '#0d1b2e', ativo ? '#2ecc71' : '#e74c3c');
+    if (ativo) {
+      conectarFeedSSE();
+    } else {
+      desconectarFeedSSE();
+    }
+  }
+
+  function atualizarToggleUI(ativo) {
+    var input  = document.getElementById('ntfy-toggle-input');
+    var knob   = document.getElementById('ntfy-toggle-knob');
+    var slider = document.getElementById('ntfy-toggle-slider');
+    var desc   = document.getElementById('ntfy-toggle-desc');
+    if (!input) return;
+    input.checked = ativo;
+    if (ativo) {
+      knob.style.left = '25px';
+      knob.style.background = '#2ecc71';
+      slider.style.background = 'rgba(46,204,113,0.2)';
+      slider.style.borderColor = 'rgba(46,204,113,0.4)';
+      desc.textContent = 'Ativo — notificações serão enviadas ao cadastrar';
+      desc.style.color = '#2ecc71';
+    } else {
+      knob.style.left = '3px';
+      knob.style.background = '#7aa8d4';
+      slider.style.background = '#1e3354';
+      slider.style.borderColor = 'rgba(74,144,217,0.3)';
+      desc.textContent = 'Inativo — nenhuma notificação será enviada';
+      desc.style.color = '#e74c3c';
+    }
+  }
+
+  function conectarFeedSSE() {
+    var topic = getNtfyTopic();
+    if (!topic) { atualizarFeedStatus('sem tópico', '#e74c3c'); return; }
+    if (feedEventSource) { feedEventSource.close(); feedEventSource = null; }
+    if (!getNtfyAtivo()) { atualizarFeedStatus('desativado', '#7aa8d4'); return; }
+
+    atualizarFeedStatus('conectando…', '#f39c12');
+    try {
+      feedEventSource = new EventSource('https://ntfy.sh/' + topic + '/sse');
+      feedEventSource.onopen = function() {
+        atualizarFeedStatus('ao vivo 🔴', '#2ecc71');
+      };
+      feedEventSource.onmessage = function(e) {
+        try {
+          var data = JSON.parse(e.data);
+          if (data.event === 'message') {
+            adicionarMensagemFeed(data);
+          }
+        } catch(err) {}
+      };
+      feedEventSource.onerror = function() {
+        atualizarFeedStatus('reconectando…', '#f39c12');
+      };
+    } catch(err) {
+      atualizarFeedStatus('erro SSE', '#e74c3c');
+    }
+  }
+
+  function desconectarFeedSSE() {
+    if (feedEventSource) { feedEventSource.close(); feedEventSource = null; }
+    atualizarFeedStatus('desativado', '#7aa8d4');
+  }
+
+  function atualizarFeedStatus(texto, cor) {
+    var dot  = document.getElementById('feed-status-dot');
+    var txt  = document.getElementById('feed-status-text');
+    if (dot) dot.style.background = cor;
+    if (txt) { txt.textContent = texto; txt.style.color = cor; }
+  }
+
+  function adicionarMensagemFeed(data) {
+    var msg = {
+      id: data.id || Date.now(),
+      titulo: data.title || '📬 Notificação',
+      corpo:  data.message || '',
+      hora:   new Date().toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'}),
+      data:   new Date().toLocaleDateString('pt-BR')
+    };
+    feedMsgs.unshift(msg);
+    // Guarda até 100 mensagens
+    if (feedMsgs.length > 100) feedMsgs = feedMsgs.slice(0, 100);
+    localStorage.setItem('acolhimento_feed', JSON.stringify(feedMsgs));
+
+    // Badge — só incrementa se não estiver na aba Feed
+    var feedView = document.getElementById('view-feed');
+    if (!feedView || !feedView.classList.contains('active')) {
+      feedUnread++;
+      atualizarBadgeFeed();
+    }
+
+    renderFeed();
+  }
+
+  function atualizarBadgeFeed() {
+    var badge = document.getElementById('feed-badge');
+    if (!badge) return;
+    if (feedUnread > 0) {
+      badge.style.display = 'block';
+      badge.textContent = feedUnread > 9 ? '9+' : feedUnread;
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+
+  function renderFeed() {
+    var list  = document.getElementById('feed-list');
+    var empty = document.getElementById('feed-empty');
+    var count = document.getElementById('feed-count');
+    if (!list) return;
+
+    if (!feedMsgs.length) {
+      list.innerHTML  = '';
+      empty.style.display = 'block';
+      if (count) count.textContent = '📬 Feed de Notificações';
+      return;
+    }
+    empty.style.display = 'none';
+    if (count) count.textContent = feedMsgs.length + ' notificaç' + (feedMsgs.length === 1 ? 'ão' : 'ões');
+
+    list.innerHTML = feedMsgs.map(function(m) {
+      return '<div style="background:linear-gradient(145deg,rgba(22,38,64,0.9),rgba(13,27,46,0.95));border:1px solid rgba(74,144,217,0.18);border-radius:14px;padding:14px 16px;">' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px;">' +
+        '<div style="font-size:0.82rem;font-weight:700;color:#fff;line-height:1.3;flex:1;">' + escHtml(m.titulo) + '</div>' +
+        '<div style="font-size:0.65rem;color:#7aa8d4;white-space:nowrap;">' + m.hora + '<br>' + m.data + '</div>' +
+        '</div>' +
+        '<div style="font-size:0.78rem;color:#a8c8e8;line-height:1.5;">' + escHtml(m.corpo) + '</div>' +
+        '</div>';
+    }).join('');
+  }
+
+  function escHtml(str) {
+    return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function limparFeed() {
+    if (!confirm('Limpar todo o histórico de notificações?')) return;
+    feedMsgs = [];
+    localStorage.removeItem('acolhimento_feed');
+    feedUnread = 0;
+    atualizarBadgeFeed();
+    renderFeed();
+    showToast('🗑 Feed limpo.', '#1a0a0a', '#e74c3c');
+  }
+
+  // Quando entrar na aba Feed, zera o badge e renderiza
+  var _origSwitchTabFeed = switchTab;
+  switchTab = function(tab) {
+    _origSwitchTabFeed(tab);
+    if (tab === 'feed') {
+      feedUnread = 0;
+      atualizarBadgeFeed();
+      renderFeed();
+      // atualiza status do SSE visualmente
+      var topic = getNtfyTopic();
+      if (!getNtfyAtivo()) {
+        atualizarFeedStatus('desativado', '#7aa8d4');
+      } else if (!topic) {
+        atualizarFeedStatus('sem tópico', '#e74c3c');
+      } else if (feedEventSource && feedEventSource.readyState === 1) {
+        atualizarFeedStatus('ao vivo 🔴', '#2ecc71');
+      } else {
+        atualizarFeedStatus('reconectando…', '#f39c12');
+      }
+    }
+  };
+
+  // Inicializa toggle e SSE após página carregar
+  window.addEventListener('load', function() {
+    var ativo = getNtfyAtivo();
+    atualizarToggleUI(ativo);
+    // Tenta conectar SSE após initCloud ter rodado (aguarda 2s)
+    setTimeout(function() {
+      if (ativo && getNtfyTopic()) conectarFeedSSE();
+    }, 2200);
+    renderFeed();
+    atualizarBadgeFeed();
+  });
+
+  // Reconecta SSE se perder conexão e ficar inativo > 30s
+  setInterval(function() {
+    if (!getNtfyAtivo()) return;
+    if (!getNtfyTopic()) return;
+    if (!feedEventSource || feedEventSource.readyState === 2) {
+      conectarFeedSSE();
+    }
+  }, 30000);
+
+  // Também carrega toggle quando abre config
+  var _carregarConfigOrig = carregarConfig;
+  carregarConfig = function() {
+    _carregarConfigOrig();
+    atualizarToggleUI(getNtfyAtivo());
+  };
+
+  // Quando salvar config, reconecta SSE com novo tópico
+  var _salvarConfigOrig = salvarConfig;
+  salvarConfig = function() {
+    _salvarConfigOrig();
+    // reconecta com novo tópico se ativo
+    setTimeout(function() {
+      if (getNtfyAtivo()) conectarFeedSSE();
+    }, 500);
+  };
 
 </script>
 
